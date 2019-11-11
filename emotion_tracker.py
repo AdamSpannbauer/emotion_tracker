@@ -78,11 +78,17 @@ class EmotionTracker:
                 else:
                     time.sleep(1)
 
-                sec_since_pred = last_pred - time.time()
+                sec_since_pred = time.time() - last_pred
         except KeyboardInterrupt:
             return
 
 
 if __name__ == '__main__':
-    emotion_tracker = EmotionTracker()
+    import argparse
+
+    ap = argparse.ArgumentParser()
+    ap.add_argument('-s', '--sample_rate', type=int, default=30)
+    args = vars(ap.parse_args())
+
+    emotion_tracker = EmotionTracker(sample_rate=args['sample_rate'])
     emotion_tracker.gather_data()
