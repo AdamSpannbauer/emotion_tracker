@@ -88,7 +88,7 @@ if __name__ == '__main__':
     import argparse
 
     ap = argparse.ArgumentParser()
-    ap.add_argument('-s', '--sample_rate', type=int, default=30)
+    ap.add_argument('-s', '--sample_rate', type=int, default=15)
     args = vars(ap.parse_args())
 
     emotion_tracker = EmotionTracker(sample_rate=args['sample_rate'])
