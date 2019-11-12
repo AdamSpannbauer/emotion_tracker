@@ -73,8 +73,9 @@ class EmotionTracker:
                     preds['timestamp'] = datetime.datetime.utcnow().strftime('%Y-%m-%d %H:%M:%S')
                     preds_df = pd.DataFrame([preds], columns=['timestamp'] + self.emotions)
 
-                    write_flag = 'a' if os.path.exists(self.file_name) else 'w'
-                    preds_df.to_csv(self.file_name, mode=write_flag, index=False)
+                    file_exists = os.path.exists(self.file_name)
+                    write_flag = 'a' if file_exists else 'w'
+                    preds_df.to_csv(self.file_name, mode=write_flag, index=False, header=(not file_exists))
                 else:
                     time.sleep(1)
 
