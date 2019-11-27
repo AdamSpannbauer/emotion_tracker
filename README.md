@@ -1,6 +1,6 @@
 # Emotion Tracker
 
-A repo holding facial expression data of my face.  I've only been collecting this facial data while I'm working on stuff related to my job as an instructor at Thinkful (I've not been perfect at always remembering to start data collection while working though).
+A repo for gathering and storing facial expression data (face provided by yours truly).  I've only been collecting this data while working on stuff related to my job as an instructor at Thinkful (I've, of course, not been perfect at always remembering to start data collection while working).
 
 ## Data Gathering
 
