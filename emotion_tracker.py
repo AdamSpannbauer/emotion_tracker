@@ -10,9 +10,24 @@ import pandas as pd
 
 
 class EmotionTracker:
+    """Helper to gather facial expression data and output to CSV
+
+    :param input_video: Path to input video (see `cv2.VideoCapture()`)
+    :param sample_rate: Seconds to wait between facial snapshot
+    :param output: Name of directory for data output
+    :param model_path: Path to hdf5 format model for classifying facial expression emotion
+    :param haarcascade_path: Path to haarcascade face detector
+
+    :ivar input_video: Path to input video (see `cv2.VideoCapture()`)
+    :ivar sample_rate: Seconds to wait between facial snapshot
+    :ivar face_detector: Face detector (see `cv2.CascadeClassifier()`)
+    :ivar model: keras model for classifying facial expression emotion
+    :ivar emotions: list of emotion names considered
+    :ivar file_name: Name of file the data will be saved to
+    """
     def __init__(self,
                  input_video=0,
-                 sample_rate=30,
+                 sample_rate=15,
                  output='data',
                  model_path='model/keras_emotion_mod.hdf5',
                  haarcascade_path='haarcascade/haarcascade_frontalface_default.xml'):
@@ -28,9 +43,17 @@ class EmotionTracker:
 
     @staticmethod
     def _rect_area(r):
+        """Calculate area of bounding box (used to find largest face in frame)"""
         return (r[2] - r[0]) * (r[3] - r[1])
 
     def _predict_emotion(self, img, predict_width=300):
+        """Classify emotions of largest face in an image
+
+        :param img: Image to classify (numpy array)
+        :param predict_width: Resizing done to image before predictions
+        :return: Dictionary of form {emotion_name: confidence_level, ...}
+        """
+        # Preprocess image
         img = imutils.resize(img, width=predict_width)
         gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
 
@@ -54,17 +77,27 @@ class EmotionTracker:
         roi = img_to_array(roi)
         roi = np.expand_dims(roi, axis=0)
 
+        # Predict emotions and reformat
         probs = self.model.predict(roi)[0]
         return {e: p for e, p in zip(self.emotions, probs)}
 
     def gather_data(self):
+        """Capture facial data from input video
+
+        Ctrl+C to quit
+
+        :return: None; data is written as a csv to the location
+                 specified in the `file_name` attribute
+        """
         vidcap = cv2.VideoCapture(self.input_video)
 
         last_pred = None
         sec_since_pred = self.sample_rate
 
+        # Try-catch for quitting program with Ctrl+C gracefully
         try:
             while True:
+                # Wait for sample rate
                 if sec_since_pred >= self.sample_rate:
                     _, frame = vidcap.read()
                     preds = self._predict_emotion(frame)
@@ -73,6 +106,7 @@ class EmotionTracker:
                     preds['timestamp'] = datetime.datetime.utcnow().strftime('%Y-%m-%d %H:%M:%S')
                     preds_df = pd.DataFrame([preds], columns=['timestamp'] + self.emotions)
 
+                    # Create output data as needed (or append if exists)
                     file_exists = os.path.exists(self.file_name)
                     write_flag = 'a' if file_exists else 'w'
                     preds_df.to_csv(self.file_name, mode=write_flag, index=False, header=(not file_exists))
