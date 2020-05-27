@@ -5,3 +5,4 @@ keras
 opencv-contrib-python
 imutils
 Pillow
+pyobjc

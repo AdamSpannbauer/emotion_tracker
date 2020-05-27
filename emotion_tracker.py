@@ -9,6 +9,8 @@ from PIL import ImageGrab
 from keras.preprocessing.image import img_to_array
 from keras.models import load_model
 
+from AppKit import NSWorkspace
+
 import numpy as np
 import pandas as pd
 
@@ -103,7 +105,8 @@ class EmotionTracker:
         """
         vidcap = cv2.VideoCapture(self.input_video)
 
-        last_pred = None
+        last_pred = time.time()
+        last_cap = time.time()
         sec_since_pred = self.sample_rate
         sec_since_cap = cap_rate
 
@@ -113,6 +116,11 @@ class EmotionTracker:
                 # Wait for sample rate
                 if sec_since_pred >= self.sample_rate:
                     _, frame = vidcap.read()
+                    active_app_name = (
+                        NSWorkspace.sharedWorkspace()
+                        .frontmostApplication()
+                        .localizedName()
+                    )
 
                     screen_cap = np.zeros((312, 500, 3))
                     if screen_cap_dir is not None and sec_since_cap >= cap_rate:
@@ -132,6 +140,7 @@ class EmotionTracker:
                     preds_df = pd.DataFrame(
                         [preds], columns=["timestamp"] + self.emotions
                     )
+                    preds_df["active_app_name"] = active_app_name
 
                     # Create output data as needed (or append if exists)
                     file_exists = os.path.exists(self.file_name)
@@ -145,18 +154,21 @@ class EmotionTracker:
 
                     if face_cap_dir is not None and sec_since_cap >= cap_rate:
                         face_cap_file = os.path.join(face_cap_dir, time_stamp_filename)
+                        frame = imutils.resize(frame, width=500)
                         cv2.imwrite(face_cap_file, frame)
+                        last_cap = time.time()
 
                     if screen_cap_dir is not None and sec_since_cap >= cap_rate:
                         screen_cap_file = os.path.join(
                             screen_cap_dir, time_stamp_filename
                         )
                         cv2.imwrite(screen_cap_file, screen_cap)
+                        last_cap = time.time()
                 else:
                     time.sleep(1)
 
                 sec_since_pred = time.time() - last_pred
-                sec_since_cap = time.time() - last_pred
+                sec_since_cap = time.time() - last_cap
         except KeyboardInterrupt:
             return
 
@@ -170,7 +182,7 @@ if __name__ == "__main__":
 
     emotion_tracker = EmotionTracker(sample_rate=args["sample_rate"])
     emotion_tracker.gather_data(
-        cap_rate=30,
+        cap_rate=60,
         face_cap_dir="images/face_caps",
         screen_cap_dir="images/screen_caps",
     )
