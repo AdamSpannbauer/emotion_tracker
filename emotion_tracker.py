@@ -29,21 +29,25 @@ class EmotionTracker:
     :ivar emotions: list of emotion names considered
     :ivar file_name: Name of file the data will be saved to
     """
-    def __init__(self,
-                 input_video=0,
-                 sample_rate=15,
-                 output='data',
-                 model_path='model/keras_emotion_mod.hdf5',
-                 haarcascade_path='haarcascade/haarcascade_frontalface_default.xml'):
+
+    def __init__(
+        self,
+        input_video=0,
+        sample_rate=15,
+        output="data",
+        model_path="model/keras_emotion_mod.hdf5",
+        haarcascade_path="haarcascade/haarcascade_frontalface_default.xml",
+    ):
         self.input_video = input_video
         self.sample_rate = sample_rate
 
         self.face_detector = cv2.CascadeClassifier(haarcascade_path)
         self.model = load_model(model_path)
 
-        self.emotions = ['angry', 'scared', 'happy', 'sad', 'surprised', 'neutral']
-        self.file_name = os.path.join(output,
-                                      datetime.datetime.now().strftime('%Y_%m_%d__%H_%M_%S.csv'))
+        self.emotions = ["angry", "scared", "happy", "sad", "surprised", "neutral"]
+        self.file_name = os.path.join(
+            output, datetime.datetime.now().strftime("%Y_%m_%d__%H_%M_%S.csv")
+        )
 
     @staticmethod
     def _rect_area(r):
@@ -62,9 +66,13 @@ class EmotionTracker:
         gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
 
         # Detect face_caps in image
-        rects = self.face_detector.detectMultiScale(gray, scaleFactor=1.1,
-                                                    minNeighbors=5, minSize=(30, 30),
-                                                    flags=cv2.CASCADE_SCALE_IMAGE)
+        rects = self.face_detector.detectMultiScale(
+            gray,
+            scaleFactor=1.1,
+            minNeighbors=5,
+            minSize=(30, 30),
+            flags=cv2.CASCADE_SCALE_IMAGE,
+        )
 
         # Return na predictions if no face_caps
         if len(rects) <= 0:
@@ -75,9 +83,9 @@ class EmotionTracker:
         x, y, w, h = rect
 
         # Pre-process face for model
-        roi = gray[y:y + h, x:x + w]
+        roi = gray[y : y + h, x : x + w]
         roi = cv2.resize(roi, (48, 48))
-        roi = roi.astype('float') / 255.0
+        roi = roi.astype("float") / 255.0
         roi = img_to_array(roi)
         roi = np.expand_dims(roi, axis=0)
 
@@ -109,29 +117,40 @@ class EmotionTracker:
                     screen_cap = np.zeros((312, 500, 3))
                     if screen_cap_dir is not None and sec_since_cap >= cap_rate:
                         screen_cap = ImageGrab.grab()
-                        screen_cap = cv2.cvtColor(np.array(screen_cap), cv2.COLOR_RGBA2BGR)
+                        screen_cap = cv2.cvtColor(
+                            np.array(screen_cap), cv2.COLOR_RGBA2BGR
+                        )
                         screen_cap = imutils.resize(screen_cap, width=500)
 
                     preds = self._predict_emotion(frame)
                     last_pred = time.time()
 
                     time_stamp = datetime.datetime.utcnow()
-                    time_stamp_filename = time_stamp.strftime('%Y_%m_%d__%H_%M_%S.jpg')
-                    preds['timestamp'] = time_stamp.strftime('%Y-%m-%d %H:%M:%S')
+                    time_stamp_filename = time_stamp.strftime("%Y_%m_%d__%H_%M_%S.jpg")
+                    preds["timestamp"] = time_stamp.strftime("%Y-%m-%d %H:%M:%S")
 
-                    preds_df = pd.DataFrame([preds], columns=['timestamp'] + self.emotions)
+                    preds_df = pd.DataFrame(
+                        [preds], columns=["timestamp"] + self.emotions
+                    )
 
                     # Create output data as needed (or append if exists)
                     file_exists = os.path.exists(self.file_name)
-                    write_flag = 'a' if file_exists else 'w'
-                    preds_df.to_csv(self.file_name, mode=write_flag, index=False, header=(not file_exists))
+                    write_flag = "a" if file_exists else "w"
+                    preds_df.to_csv(
+                        self.file_name,
+                        mode=write_flag,
+                        index=False,
+                        header=(not file_exists),
+                    )
 
                     if face_cap_dir is not None and sec_since_cap >= cap_rate:
                         face_cap_file = os.path.join(face_cap_dir, time_stamp_filename)
                         cv2.imwrite(face_cap_file, frame)
 
                     if screen_cap_dir is not None and sec_since_cap >= cap_rate:
-                        screen_cap_file = os.path.join(screen_cap_dir, time_stamp_filename)
+                        screen_cap_file = os.path.join(
+                            screen_cap_dir, time_stamp_filename
+                        )
                         cv2.imwrite(screen_cap_file, screen_cap)
                 else:
                     time.sleep(1)
@@ -142,12 +161,16 @@ class EmotionTracker:
             return
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     import argparse
 
     ap = argparse.ArgumentParser()
-    ap.add_argument('-s', '--sample_rate', type=int, default=15)
+    ap.add_argument("-s", "--sample_rate", type=int, default=15)
     args = vars(ap.parse_args())
 
-    emotion_tracker = EmotionTracker(sample_rate=args['sample_rate'])
-    emotion_tracker.gather_data(cap_rate=30, face_cap_dir='images/face_caps', screen_cap_dir='images/screen_caps')
+    emotion_tracker = EmotionTracker(sample_rate=args["sample_rate"])
+    emotion_tracker.gather_data(
+        cap_rate=30,
+        face_cap_dir="images/face_caps",
+        screen_cap_dir="images/screen_caps",
+    )
