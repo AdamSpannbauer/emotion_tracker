@@ -4,3 +4,4 @@ tensorflow < 2.0
 keras
 opencv-contrib-python
 imutils
+Pillow

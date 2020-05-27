@@ -1,10 +1,14 @@
 import datetime
 import os
 import time
+
 import cv2
 import imutils
+from PIL import ImageGrab
+
 from keras.preprocessing.image import img_to_array
 from keras.models import load_model
+
 import numpy as np
 import pandas as pd
 
@@ -57,12 +61,12 @@ class EmotionTracker:
         img = imutils.resize(img, width=predict_width)
         gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
 
-        # Detect faces in image
+        # Detect face_caps in image
         rects = self.face_detector.detectMultiScale(gray, scaleFactor=1.1,
                                                     minNeighbors=5, minSize=(30, 30),
                                                     flags=cv2.CASCADE_SCALE_IMAGE)
 
-        # Return na predictions if no faces
+        # Return na predictions if no face_caps
         if len(rects) <= 0:
             return {e: np.nan for e in self.emotions}
 
@@ -81,7 +85,7 @@ class EmotionTracker:
         probs = self.model.predict(roi)[0]
         return {e: p for e, p in zip(self.emotions, probs)}
 
-    def gather_data(self):
+    def gather_data(self, cap_rate=30, face_cap_dir=None, screen_cap_dir=None):
         """Capture facial data from input video
 
         Ctrl+C to quit
@@ -93,6 +97,7 @@ class EmotionTracker:
 
         last_pred = None
         sec_since_pred = self.sample_rate
+        sec_since_cap = cap_rate
 
         # Try-catch for quitting program with Ctrl+C gracefully
         try:
@@ -100,20 +105,39 @@ class EmotionTracker:
                 # Wait for sample rate
                 if sec_since_pred >= self.sample_rate:
                     _, frame = vidcap.read()
+
+                    screen_cap = np.zeros((312, 500, 3))
+                    if screen_cap_dir is not None and sec_since_cap >= cap_rate:
+                        screen_cap = ImageGrab.grab()
+                        screen_cap = cv2.cvtColor(np.array(screen_cap), cv2.COLOR_RGBA2BGR)
+                        screen_cap = imutils.resize(screen_cap, width=500)
+
                     preds = self._predict_emotion(frame)
                     last_pred = time.time()
 
-                    preds['timestamp'] = datetime.datetime.utcnow().strftime('%Y-%m-%d %H:%M:%S')
+                    time_stamp = datetime.datetime.utcnow()
+                    time_stamp_filename = time_stamp.strftime('%Y_%m_%d__%H_%M_%S.jpg')
+                    preds['timestamp'] = time_stamp.strftime('%Y-%m-%d %H:%M:%S')
+
                     preds_df = pd.DataFrame([preds], columns=['timestamp'] + self.emotions)
 
                     # Create output data as needed (or append if exists)
                     file_exists = os.path.exists(self.file_name)
                     write_flag = 'a' if file_exists else 'w'
                     preds_df.to_csv(self.file_name, mode=write_flag, index=False, header=(not file_exists))
+
+                    if face_cap_dir is not None and sec_since_cap >= cap_rate:
+                        face_cap_file = os.path.join(face_cap_dir, time_stamp_filename)
+                        cv2.imwrite(face_cap_file, frame)
+
+                    if screen_cap_dir is not None and sec_since_cap >= cap_rate:
+                        screen_cap_file = os.path.join(screen_cap_dir, time_stamp_filename)
+                        cv2.imwrite(screen_cap_file, screen_cap)
                 else:
                     time.sleep(1)
 
                 sec_since_pred = time.time() - last_pred
+                sec_since_cap = time.time() - last_pred
         except KeyboardInterrupt:
             return
 
@@ -126,4 +150,4 @@ if __name__ == '__main__':
     args = vars(ap.parse_args())
 
     emotion_tracker = EmotionTracker(sample_rate=args['sample_rate'])
-    emotion_tracker.gather_data()
+    emotion_tracker.gather_data(cap_rate=30, face_cap_dir='images/face_caps', screen_cap_dir='images/screen_caps')
