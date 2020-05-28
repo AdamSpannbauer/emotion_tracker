@@ -110,6 +110,8 @@ class EmotionTracker:
         sec_since_pred = self.sample_rate
         sec_since_cap = cap_rate
 
+        top_emotions = {k: {"path": None, "score": -1} for k in self.emotions}
+
         # Try-catch for quitting program with Ctrl+C gracefully
         try:
             while True:
@@ -152,11 +154,24 @@ class EmotionTracker:
                         header=(not file_exists),
                     )
 
-                    if face_cap_dir is not None and sec_since_cap >= cap_rate:
-                        face_cap_file = os.path.join(face_cap_dir, time_stamp_filename)
-                        frame = imutils.resize(frame, width=500)
-                        cv2.imwrite(face_cap_file, frame)
-                        last_cap = time.time()
+                    if face_cap_dir is not None:
+                        for e in self.emotions:
+                            old_val = top_emotions[e]["score"]
+                            new_val = preds_df[e][0]
+
+                            if new_val > old_val:
+                                face_cap_file = os.path.join(
+                                    face_cap_dir, e, time_stamp_filename
+                                )
+
+                                if top_emotions[e]["path"]:
+                                    os.remove(top_emotions[e]["path"])
+
+                                top_emotions[e]["path"] = face_cap_file
+                                top_emotions[e]["score"] = new_val
+
+                                frame = imutils.resize(frame, width=500)
+                                cv2.imwrite(face_cap_file, frame)
 
                     if screen_cap_dir is not None and sec_since_cap >= cap_rate:
                         screen_cap_file = os.path.join(
