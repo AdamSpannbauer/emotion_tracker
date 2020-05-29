@@ -9,10 +9,19 @@ from PIL import ImageGrab
 from keras.preprocessing.image import img_to_array
 from keras.models import load_model
 
-from AppKit import NSWorkspace
+from subprocess import Popen, PIPE
 
 import numpy as np
 import pandas as pd
+
+
+def get_active_app_name():
+    cmd = """osascript \
+        -e 'tell application "System Events"' \
+        -e 'set app_name to name of the first process whose frontmost is true' \
+        -e 'end tell' """
+    active_app_name = Popen(cmd, shell=True, stdout=PIPE).stdout.read()
+    return active_app_name.decode().strip()
 
 
 class EmotionTracker:
@@ -118,11 +127,7 @@ class EmotionTracker:
                 # Wait for sample rate
                 if sec_since_pred >= self.sample_rate:
                     _, frame = vidcap.read()
-                    active_app_name = (
-                        NSWorkspace.sharedWorkspace()
-                        .frontmostApplication()
-                        .localizedName()
-                    )
+                    active_app_name = get_active_app_name()
 
                     screen_cap = np.zeros((312, 500, 3))
                     if screen_cap_dir is not None and sec_since_cap >= cap_rate:
