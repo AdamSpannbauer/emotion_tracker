@@ -1,5 +1,4 @@
 """Display expression highlights from each session in a montage"""
-# TODO: label images with emotions
 import os
 import glob
 from collections import defaultdict
@@ -33,6 +32,7 @@ for i in range(min_len):
     row = []
     for emotion in emotions:
         im = images[emotion][i]
+        cv2.putText(im, emotion, (10, 30), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 255), 3)
         row.append(im)
 
         if len(row) == N_COLS:
