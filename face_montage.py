@@ -1,4 +1,5 @@
 """Display expression highlights from each session in a montage"""
+# TODO: label images with emotions
 import os
 import glob
 from collections import defaultdict
@@ -7,7 +8,7 @@ import cv2
 import imutils
 
 N_COLS = 3
-N_REPEATS = 2
+N_REPEATS = 10
 
 # Read
 image_paths = glob.glob("images/face_caps/*/*.jpg")
