@@ -6,7 +6,7 @@
   <img src='i_have_feelings.png' width=30%>
 </p>
 
-A repo for gathering and storing facial expression data (face provided by yours truly).  I've only been collecting this data while working on stuff related to my job as an instructor at Thinkful (I've, of course, not been perfect at always remembering to start data collection while working).
+A repo for gathering and storing facial expression data (face provided by yours truly).
 
 ## Data Gathering
 
